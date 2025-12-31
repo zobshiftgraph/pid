@@ -3,139 +3,272 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Briefing Grid</title>
+    <title>PID Report Tracker</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; background-color: #f4f7f6; color: #333; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        body { font-family: -apple-system, sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; border: 1px solid #dfe6e9; text-align: center; }
-        th { background-color: #0984e3; color: white; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
+        /* Container and Header Setup */
+        .container { background-color: white; padding: 2rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); width: 100%; max-width: 950px; position: relative; }
         
-        .btn { padding: 10px 18px; background: #0984e3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-save { background: #00b894; width: 100%; margin-top: 15px; padding: 12px; }
-        
-        #modalOverlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 1000;
+        /* STICKY HEADER AREA */
+        .sticky-header {
+            position: sticky;
+            top: -20px; /* Aligns with the body padding */
+            background-color: white;
+            z-index: 100;
+            padding-top: 10px;
+            margin-bottom: 0;
         }
-        .modal-content {
-            background: white; width: 90%; max-width: 500px; margin: 50px auto; padding: 25px;
-            border-radius: 8px; max-height: 85vh; overflow-y: auto;
-        }
-        .input-group { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; }
-        .input-group label { width: 70px; font-weight: bold; font-size: 0.9em; }
-        input[type="text"] { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+
+        h1 { text-align: center; color: #1a202c; margin: 0 0 1rem 0; text-transform: uppercase; border-bottom: 2px solid #2d3748; padding-bottom: 10px; }
         
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .controls { display: flex; justify-content: center; margin-bottom: 25px; align-items: center; width: 100%; }
+        .utc-clock { 
+            font-family: 'Courier New', Courier, monospace; 
+            font-weight: bold; 
+            color: #e53e3e; 
+            background: #fff5f5; 
+            padding: 10px 30px; 
+            border-radius: 8px; 
+            border: 2px solid #feb2b2; 
+            font-size: 2rem; 
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        /* STICKY TABLE HEADERS */
+        .grid-container { display: grid; grid-template-columns: 100px 1fr 1fr; border: 2px solid #2d3748; border-radius: 6px; }
+        
+        .grid-header { 
+            background-color: #2d3748; 
+            color: white; 
+            padding: 15px; 
+            text-align: center; 
+            font-weight: bold; 
+            position: sticky;
+            top: 135px; /* Offset to sit below the sticky clock/title */
+            z-index: 101;
+        }
+        
+        .divider-col { border-right: 4px solid #2d3748 !important; }
+
+        .grid-cell { 
+            padding: 10px; 
+            border-bottom: 1px solid #e2e8f0; 
+            border-right: 1px solid #e2e8f0; 
+            display: flex; 
+            flex-direction: row; 
+            gap: 6px; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 80px; 
+            position: relative; 
+            transition: background-color 0.3s;
+        }
+
+        .current-hour-row {
+            background-color: #ebf8ff !important; 
+            border-top: 2px solid #3182ce;
+            border-bottom: 2px solid #3182ce;
+        }
+        .time-cell.current-hour-row {
+            border-left: 6px solid #3182ce;
+            color: #2c5282;
+        }
+
+        .grid-cell.has-entries { flex-direction: column; align-items: center; }
+        .time-cell { background-color: #edf2f7; font-weight: bold; border-right: 2px solid #2d3748; font-size: 1.1rem; }
+        
+        .entry-container { 
+            display: flex; 
+            align-items: center; 
+            justify-content: flex-start; 
+            width: fit-content; 
+            min-width: 175px; 
+            position: relative;
+            padding-right: 55px; 
+            margin-bottom: 4px;
+        }
+        
+        .cell-text { font-weight: bold; color: #2d3748; font-size: 0.95rem; white-space: nowrap; text-align: left; }
+        .edit-input { font-weight: bold; font-family: inherit; font-size: 0.95rem; border: 1px solid #3182ce; padding: 2px; width: 130px; outline: none; background: white; }
+
+        .action-group { position: absolute; right: 0; display: flex; gap: 4px; }
+        .icon-btn { background: none; border: none; color: #a0aec0; cursor: pointer; font-size: 1.15rem; padding: 2px; transition: color 0.2s; }
+        .edit-btn:hover { color: #3182ce; }
+        .undo-btn:hover { color: #e53e3e; }
+
+        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-blue { background-color: #3182ce; color: white; }
+        .btn-green { background-color: #38a169 !important; color: white !important; }
+        .btn-red { background-color: #e53e3e; color: white; }
+        .btn-gray { background-color: #edf2f7; color: #2d3748; border: 1px solid #cbd5e0; font-size: 0.75rem; flex: 1; white-space: nowrap; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 15px; border-radius: 10px; width: 350px; }
+        .report-row { display: flex; align-items: center; justify-content: center; gap: 8px; background: #f9fafb; padding: 5px; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 4px; }
+        .btn-report-main { background-color: #3182ce; color: white; flex: 1; padding: 6px; font-size: 0.9rem; }
+        .btn-report-neg { background-color: #718096; color: white; flex: 2; padding: 6px; font-size: 0.85rem; }
+        .modal-footer-btn { width: 100%; margin-top: 8px; padding: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="top-bar">
-        <h2>Weather Briefing</h2>
-        <div>
-            <input type="checkbox" id="daySupCheck" onchange="saveAllData()"> 
-            <label for="daySupCheck"><strong>Day Sup Checked</strong></label>
+    <div class="sticky-header">
+        <h1>PID Report Tracker</h1>
+        <div class="controls">
+            <div class="utc-clock" id="utcClock">--:--</div>
         </div>
     </div>
 
-    <button class="btn" onclick="openModal()">Edit All Areas</button>
-
-    <table id="weatherTable">
-        <thead>
-            <tr>
-                <th>Area</th>
-                <th>Turbulence</th>
-                <th>Icing</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
+    <div class="grid-container" id="trackerGrid">
+        <div class="grid-header">Time</div>
+        <div class="grid-header divider-col">Turbulence</div>
+        <div class="grid-header">Icing</div>
+    </div>
 </div>
 
-<div id="modalOverlay">
+<div class="modal-overlay" id="reportModal">
     <div class="modal-content">
-        <h3>Update All Areas</h3>
-        <div id="modalInputs"></div>
-        <button class="btn btn-save" onclick="updateAndSave()">Apply Changes</button>
-        <button class="btn" style="background:#b2bec3; width:100%; margin-top:8px;" onclick="closeModal()">Close</button>
+        <h3 style="margin-top:0; text-align:center;">Submit Reports</h3>
+        <div id="reportSectorList"></div>
+        <button class="btn-blue modal-footer-btn" onclick="toggleModal('reportModal', false)">Done</button>
     </div>
 </div>
 
 <script>
-    const tableBody = document.getElementById('tableBody');
-    const modalInputs = document.getElementById('modalInputs');
+    let activeCellId = null;
+    const sectors = ["02", "03", "04", "06", "07", "08"];
 
-    // Default values for Area 8 as requested
-    const defaults = {
-        turb8: "02 03 06 08",
-        ice8: "02 08"
-    };
+    function init() {
+        const grid = document.getElementById('trackerGrid');
+        for (let i = 6; i <= 23; i++) {
+            const time = i.toString().padStart(2, '0') + "00";
+            
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'grid-cell time-cell';
+            timeDiv.id = `row-time-${i}`;
+            timeDiv.textContent = time;
+            grid.appendChild(timeDiv);
+            
+            const turbId = `cell-turb-${time}`;
+            const turbDiv = document.createElement('div');
+            turbDiv.className = 'grid-cell divider-col';
+            turbDiv.id = turbId;
+            renderButtons(turbDiv, turbId);
+            grid.appendChild(turbDiv);
 
-    // Initialize HTML Structure
-    for (let i = 1; i <= 8; i++) {
-        let tVal = (i === 8) ? defaults.turb8 : "";
-        let iVal = (i === 8) ? defaults.ice8 : "";
-
-        tableBody.innerHTML += `
-            <tr id="row-${i}">
-                <td><strong>Area ${i}</strong></td>
-                <td class="turb-cell">${tVal}</td>
-                <td class="ice-cell">${iVal}</td>
-            </tr>`;
-        
-        modalInputs.innerHTML += `
-            <div class="input-group">
-                <label>Area ${i}</label>
-                <input type="text" id="turb-in-${i}" value="${tVal}" placeholder="Turb">
-                <input type="text" id="ice-in-${i}" value="${iVal}" placeholder="Ice">
-            </div>`;
+            const icingId = `cell-icing-${time}`;
+            const icingDiv = document.createElement('div');
+            icingDiv.className = 'grid-cell';
+            icingDiv.id = icingId;
+            renderButtons(icingDiv, icingId);
+            grid.appendChild(icingDiv);
+        }
+        setInterval(updateClockAndHighlight, 1000);
+        updateClockAndHighlight();
     }
 
-    function openModal() { document.getElementById('modalOverlay').style.display = 'block'; }
-    function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+    function updateClockAndHighlight() {
+        const now = new Date();
+        const utc_h = String(now.getUTCHours()).padStart(2, '0');
+        const utc_m = String(now.getUTCMinutes()).padStart(2, '0');
+        document.getElementById('utcClock').textContent = `${utc_h}:${utc_m}`;
 
-    function updateAndSave() {
-        for (let i = 1; i <= 8; i++) {
-            const t = document.getElementById(`turb-in-${i}`).value;
-            const ic = document.getElementById(`ice-in-${i}`).value;
-            document.querySelector(`#row-${i} .turb-cell`).innerText = t;
-            document.querySelector(`#row-${i} .ice-cell`).innerText = ic;
+        const localHour = now.getHours();
+        document.querySelectorAll('.current-hour-row').forEach(el => el.classList.remove('current-hour-row'));
+
+        if (localHour >= 6 && localHour <= 23) {
+            const timeCell = document.getElementById(`row-time-${localHour}`);
+            const turbCell = document.getElementById(`cell-turb-${String(localHour).padStart(2, '0')}00`);
+            const icingCell = document.getElementById(`cell-icing-${String(localHour).padStart(2, '0')}00`);
+            if (timeCell) timeCell.classList.add('current-hour-row');
+            if (turbCell) turbCell.classList.add('current-hour-row');
+            if (icingCell) icingCell.classList.add('current-hour-row');
         }
-        saveAllData();
-        closeModal();
     }
 
-    // Save state to Local Storage
-    function saveAllData() {
-        const data = { checked: document.getElementById('daySupCheck').checked, values: [] };
-        for (let i = 1; i <= 8; i++) {
-            data.values.push({
-                t: document.getElementById(`turb-in-${i}`).value,
-                ic: document.getElementById(`ice-in-${i}`).value
-            });
-        }
-        localStorage.setItem('weatherAppData', JSON.stringify(data));
+    function renderButtons(container, cellId) {
+        container.classList.remove('has-entries');
+        container.innerHTML = `
+            <button class="btn-gray" onclick="setNotRequired('${cellId}')">Not Required</button>
+            <button class="btn-gray" onclick="openReportModal('${cellId}')">Report</button>
+        `;
     }
 
-    // Load state on startup
-    window.onload = () => {
-        const saved = JSON.parse(localStorage.getItem('weatherAppData'));
-        if (saved) {
-            document.getElementById('daySupCheck').checked = saved.checked;
-            saved.values.forEach((item, index) => {
-                let i = index + 1;
-                document.getElementById(`turb-in-${i}`).value = item.t;
-                document.getElementById(`ice-in-${i}`).value = item.ic;
-                document.querySelector(`#row-${i} .turb-cell`).innerText = item.t;
-                document.querySelector(`#row-${i} .ice-cell`).innerText = item.ic;
-            });
+    function setNotRequired(cellId) { appendEntry(cellId, "Not Required"); }
+
+    function appendEntry(cellId, text) {
+        const cell = document.getElementById(cellId);
+        if (cell.querySelector('.btn-gray')) {
+            cell.innerHTML = '';
+            cell.classList.add('has-entries');
         }
-    };
+        const entryDiv = document.createElement('div');
+        entryDiv.className = 'entry-container';
+        entryDiv.innerHTML = `
+            <span class="cell-text">${text}</span>
+            <div class="action-group">
+                <button class="icon-btn edit-btn" onclick="editEntry(this)" title="Edit">✎</button>
+                <button class="icon-btn undo-btn" onclick="removeThisEntry(this, '${cellId}')" title="Remove">&#8634;</button>
+            </div>
+        `;
+        cell.appendChild(entryDiv);
+    }
+
+    function editEntry(btn) {
+        const container = btn.closest('.entry-container');
+        const textSpan = container.querySelector('.cell-text');
+        const input = document.createElement('input');
+        input.className = 'edit-input';
+        input.value = textSpan.innerText;
+        container.replaceChild(input, textSpan);
+        input.focus();
+        input.select();
+        const save = () => {
+            const span = document.createElement('span');
+            span.className = 'cell-text';
+            span.innerText = input.value || "Empty";
+            container.replaceChild(span, input);
+        };
+        input.onblur = save;
+        input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
+    }
+
+    function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
+
+    function openReportModal(cellId) {
+        activeCellId = cellId;
+        const list = document.getElementById('reportSectorList');
+        list.innerHTML = '';
+        sectors.forEach(s => {
+            const row = document.createElement('div');
+            row.className = 'report-row';
+            row.innerHTML = `
+                <button class="btn-report-main" onclick="submitReport('${s}', false, this)">${s}</button>
+                <button class="btn-report-neg" onclick="submitReport('${s}', true, this)">${s} Neg Rpt</button>
+            `;
+            list.appendChild(row);
+        });
+        toggleModal('reportModal', true);
+    }
+
+    function submitReport(sectorName, isNeg, btnElement) {
+        const now = new Date();
+        const h = String(now.getUTCHours()).padStart(2, '0');
+        const m = String(now.getUTCMinutes()).padStart(2, '0');
+        appendEntry(activeCellId, `${sectorName} ${h}${m}Z${isNeg ? ' Neg' : ''}`);
+        btnElement.classList.remove('btn-report-main', 'btn-report-neg');
+        btnElement.classList.add('btn-green');
+    }
+
+    function removeThisEntry(btn, cellId) {
+        const cell = document.getElementById(cellId);
+        btn.closest('.entry-container').remove();
+        if (cell.children.length === 0) renderButtons(cell, cellId);
+    }
+
+    window.onload = init;
 </script>
-
 </body>
 </html>
