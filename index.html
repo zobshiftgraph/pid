@@ -5,64 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PID Report Tracker</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        .container { background-color: white; padding: 2rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); width: 100%; max-width: 950px; position: relative; }
+        body { font-family: -apple-system, sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; overflow: hidden; }
+        .container { background-color: white; padding: 2rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); width: 100%; max-width: 950px; height: 90vh; display: flex; flex-direction: column; }
         
-        .sticky-header { 
-            position: sticky; 
-            top: -20px; 
-            background-color: white; 
-            z-index: 110; 
-            padding-top: 10px; 
-            padding-bottom: 5px;
-            margin-bottom: 0;
-        }
-
+        .sticky-header { background-color: white; z-index: 110; padding-bottom: 10px; flex-shrink: 0; }
         h1 { text-align: center; color: #1a202c; margin: 0; text-transform: uppercase; border-bottom: 2px solid #2d3748; padding-bottom: 10px; }
         
-        .header-controls { display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px 0; background: white;}
-        .action-buttons { display: flex; gap: 8px; }
+        .header-controls { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin: 15px 0 10px 0; background: white; width: 100%; }
+        .action-buttons-left { display: flex; gap: 8px; justify-content: flex-start; align-items: center; }
+        .action-buttons-right { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
         
-        .utc-clock { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #e53e3e; background: #fff5f5; padding: 8px 25px; border-radius: 8px; border: 2px solid #feb2b2; font-size: 1.8rem; }
+        .utc-clock { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #3182ce; background: #ebf8ff; padding: 8px 25px; border-radius: 8px; border: 2px solid #bee3f8; font-size: 1.8rem; text-align: center; }
         
-        .grid-container { display: grid; grid-template-columns: 100px 1fr 1fr; border: 2px solid #2d3748; border-radius: 6px; background-color: white; }
-        
-        .grid-header { 
-            background-color: #2d3748; 
-            color: white; 
-            padding: 15px; 
-            text-align: center; 
-            font-weight: bold; 
-            position: sticky; 
-            top: 114px; /* Flushed to clock area */
-            z-index: 105; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-        }
-
+        .grid-wrapper { overflow-y: auto; border: 2px solid #2d3748; border-radius: 6px; flex-grow: 1; }
+        .grid-container { display: grid; grid-template-columns: 100px 1fr 1fr; background-color: white; }
+        .grid-header { background-color: #2d3748; color: white; padding: 15px; text-align: center; font-weight: bold; position: sticky; top: 0; z-index: 105; }
         .divider-col { border-right: 4px solid #2d3748 !important; }
 
         .grid-cell { padding: 10px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; display: flex; flex-direction: row; gap: 6px; align-items: center; justify-content: center; min-height: 80px; position: relative; transition: background-color 0.3s; background-color: white; }
         
-        .current-hour-row { background-color: #ebf8ff !important; border-top: 2px solid #3182ce; border-bottom: 2px solid #3182ce; }
+        .clear-cell-btn { position: absolute; top: 2px; right: 5px; background: none; border: none; color: #2d3748; font-size: 1.4rem; cursor: pointer; padding: 0; line-height: 1; font-weight: bold; z-index: 20; display: none; opacity: 0.6; }
+        .grid-cell.has-entries .clear-cell-btn { display: block !important; }
+        .clear-cell-btn:hover { opacity: 1; transform: scale(1.1); }
+
+        .current-hour-active { background-color: #ebf8ff !important; border-top: 2px solid #3182ce; border-bottom: 2px solid #3182ce; }
+        .current-hour-complete { background-color: #e6ffef !important; border-top: 2px solid #3182ce; border-bottom: 2px solid #3182ce; }
+        .past-complete { background-color: #e6ffef !important; }
+        .past-incomplete { background-color: #fff5f5 !important; }
+        
         .grid-cell.has-entries { flex-direction: column; align-items: center; }
-        .time-cell { background-color: #edf2f7; font-weight: bold; border-right: 2px solid #2d3748; font-size: 1.1rem; }
+        .time-cell { background-color: #edf2f7; font-weight: bold; border-right: 2px solid #2d3748; font-size: 1.1rem; color: #2d3748; }
         
         .entry-container { display: flex; align-items: center; justify-content: flex-start; width: fit-content; min-width: 175px; position: relative; padding-right: 55px; margin-bottom: 4px; }
         .cell-text { font-weight: bold; color: #2d3748; font-size: 0.95rem; white-space: nowrap; }
-        
         .action-group { position: absolute; right: 0; display: flex; gap: 4px; }
         .icon-btn { background: none; border: none; color: #a0aec0; cursor: pointer; font-size: 1.15rem; padding: 2px; }
 
-        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
         .btn-blue { background-color: #3182ce; color: white; }
         .btn-green { background-color: #38a169 !important; color: white !important; }
         .btn-red { background-color: #e53e3e; color: white; }
-        .btn-gray { background-color: #edf2f7; color: #2d3748; border: 1px solid #cbd5e0; font-size: 0.75rem; flex: 1; }
+        .btn-gray { background-color: #edf2f7; color: #2d3748; border: 1px solid #cbd5e0; font-size: 0.75rem; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 550px; }
-        .manual-row { display: grid; grid-template-columns: 60px 80px 100px 1fr; align-items: center; gap: 15px; background: #f9fafb; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 6px; }
-        .manual-row input[type="text"] { width: 60px; padding: 4px; border: 1px solid #cbd5e0; border-radius: 4px; text-align: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; color: black; }
+
+        .manual-row { display: flex; align-items: center; gap: 12px; background: #f9fafb; padding: 10px; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 8px; flex-wrap: wrap; }
+        .manual-sector-label { font-weight: bold; font-size: 0.85rem; width: 80px; }
+        .manual-row input[type="text"] { width: 55px; padding: 6px; border: 1px solid #cbd5e0; border-radius: 4px; text-align: center; }
+        
+        .toggle-btn { background-color: #edf2f7; color: #2d3748; border: 1px solid #cbd5e0; font-size: 0.75rem; transition: all 0.2s; width: auto; min-width: 45px; padding: 6px 10px; }
+        .toggle-btn.active { background-color: #38a169 !important; color: white !important; border-color: #2f855a; }
+        
+        .report-group-box { background: #f9fafb; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 12px; padding: 10px; display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 15px; }
+        .report-sector-text { font-weight: bold; font-size: 1.2rem; color: #2d3748; text-align: center; }
+        .report-btn-list { display: flex; flex-direction: column; gap: 10px; }
+        .report-btn-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .report-btn-pair button { height: 32px; font-size: 0.75rem; width: 100%; }
+        .report-btn-pair .btn-blue-toggle { background-color: #3182ce; color: white; border: none; }
+
+        .modal-footer { display: flex; gap: 10px; margin-top: 15px; }
+        .modal-footer button { flex: 1; padding: 12px; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -71,34 +74,40 @@
     <div class="sticky-header">
         <h1>PID Report Tracker</h1>
         <div class="header-controls">
-            <div class="action-buttons">
-                <button id="autoSaveBtn" class="btn-blue" onclick="toggleAutoSave()">Enable Auto-Save</button>
-                <button class="btn-gray" onclick="importFromJson()">Load JSON</button>
+            <div class="action-buttons-left">
+                <button id="autoSaveBtn" class="btn-gray" onclick="toggleAutoSave()">Auto-Save: Off</button>
+                <button class="btn-gray" onclick="importFromJson()">Load</button>
             </div>
             <div class="utc-clock" id="utcClock">--:--</div>
-            <div class="action-buttons">
+            <div class="action-buttons-right">
+                <button class="btn-gray" onclick="toggleModal('combineModal', true)">Sectors</button>
                 <button class="btn-red" onclick="clearAllData()">Clear Page</button>
             </div>
         </div>
     </div>
 
-    <div class="grid-container" id="trackerGrid">
-        <div class="grid-header">Time</div>
-        <div class="grid-header divider-col">Turbulence</div>
-        <div class="grid-header">Icing</div>
+    <div class="grid-wrapper">
+        <div class="grid-container" id="trackerGrid">
+            <div class="grid-header">Time</div>
+            <div class="grid-header divider-col">Turbulence</div>
+            <div class="grid-header">Icing</div>
+        </div>
     </div>
 </div>
 
-<div id="manualModal" class="modal-overlay"><div class="modal-content"><h3 style="text-align:center;">Manual Entry</h3><div id="manualHourLabel" style="text-align:center; color:#3182ce; font-weight:bold; margin-bottom:10px;"></div><div id="manualSectorList"></div><button class="btn-blue" style="width: 100%; margin-top: 15px;" onclick="toggleModal('manualModal', false)">Done</button></div></div>
-<div id="reportModal" class="modal-overlay"><div class="modal-content" style="width: 350px;"><h3 style="text-align:center;">Submit Reports</h3><div id="reportHourLabel" style="text-align:center; color:#3182ce; font-weight:bold; margin-bottom:10px;"></div><div id="reportSectorList"></div><button class="btn-blue" style="width:100%; margin-top: 10px;" onclick="toggleModal('reportModal', false)">Done</button></div></div>
+<div id="combineModal" class="modal-overlay"><div class="modal-content" style="width:320px;"><h3 style="text-align:center;">Configure Sectors</h3><div id="sectorChecklist"></div><div style="display:flex; gap:8px; margin:10px 0; justify-content:center;"><button class="btn-blue" onclick="combineSelected()">Combine</button><button class="btn-blue" style="background-color:#4a5568;" onclick="decombineSelected()">Decombine</button></div><button class="btn-gray" style="width:100%;" onclick="resetSectors()">Reset to Default</button><button class="btn-red" style="width:100%; margin-top:8px;" onclick="toggleModal('combineModal', false)">Close</button></div></div>
+<div id="manualModal" class="modal-overlay"><div class="modal-content" style="width: 750px; max-height: 90vh; overflow-y: auto;"><h3 style="text-align:center;">Manual Entry</h3><div id="manualHourLabel" style="text-align:center; color:#3182ce; font-weight:bold; margin-bottom:10px;"></div><div id="manualSectorList"></div><div class="modal-footer"><button class="btn-red" onclick="toggleModal('manualModal', false)">CANCEL</button><button class="btn-blue" onclick="submitAllManual()">DONE</button></div></div></div>
+<div id="reportModal" class="modal-overlay"><div class="modal-content" style="width:420px; max-height: 90vh; overflow-y: auto;"><h3 style="text-align:center;">Submit Reports</h3><div id="reportHourLabel" style="text-align:center; color:#3182ce; font-weight:bold; margin-bottom:10px;"></div><div id="reportSectorList"></div><button class="btn-blue" style="width:100%; margin-top: 10px; padding: 12px; font-size: 1.1rem;" onclick="submitAllQuick()">DONE</button></div></div>
 
 <script>
     let activeCellId = null;
-    let fileHandle = null;
-    const sectors = ["02", "03", "04", "06", "07", "08"];
-    const DEFAULT_FILENAME = "pid_tracker_area8.json";
+    let fileHandle = null; 
+    const DEFAULT_SECTORS = ["02/07", "03/08", "04/06"];
+    let currentSectors = [...DEFAULT_SECTORS];
 
     function init() {
+        const savedSectors = localStorage.getItem('pidSectors');
+        if (savedSectors) currentSectors = JSON.parse(savedSectors);
         const grid = document.getElementById('trackerGrid');
         for (let i = 6; i <= 23; i++) {
             const timeStr = i.toString().padStart(2, '0') + "00";
@@ -114,211 +123,183 @@
             });
         }
         loadSavedData();
+        updateSectorChecklist();
         setInterval(updateClockAndHighlight, 1000);
         updateClockAndHighlight();
-    }
-
-    function importFromJson() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = e => {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = event => {
-                try {
-                    const data = JSON.parse(event.target.result);
-                    document.querySelectorAll('.grid-cell[id^="cell-"]').forEach(cell => renderButtons(cell, cell.id));
-                    for (const [cellId, entries] of Object.entries(data)) {
-                        if (Array.isArray(entries)) entries.forEach(entryText => appendEntry(cellId, entryText));
-                    }
-                    saveAllData();
-                    alert("Data loaded successfully.");
-                } catch (err) { alert("Error parsing JSON file."); }
-            };
-            reader.readAsText(file);
-        };
-        input.click();
-    }
-
-    async function toggleAutoSave() {
-        if (fileHandle) {
-            fileHandle = null;
-            document.getElementById('autoSaveBtn').className = 'btn-blue';
-            document.getElementById('autoSaveBtn').textContent = 'Enable Auto-Save';
-            return;
-        }
-        try {
-            fileHandle = await window.showSaveFilePicker({
-                suggestedName: DEFAULT_FILENAME,
-                types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
-            });
-            document.getElementById('autoSaveBtn').className = 'btn-green';
-            document.getElementById('autoSaveBtn').textContent = 'Auto-Save Active';
-            writeToLocalFile();
-        } catch (err) { console.error(err); }
-    }
-
-    async function writeToLocalFile() {
-        const data = {};
-        document.querySelectorAll('.grid-cell[id^="cell-"]').forEach(cell => {
-            const entries = [];
-            cell.querySelectorAll('.cell-text').forEach(span => entries.push(span.innerText));
-            if (entries.length > 0) data[cell.id] = entries;
-        });
-
-        if (fileHandle) {
-            try {
-                const writable = await fileHandle.createWritable();
-                await writable.write(JSON.stringify(data, null, 2));
-                await writable.close();
-            } catch (err) { 
-                fileHandle = null;
-                document.getElementById('autoSaveBtn').className = 'btn-blue';
-                document.getElementById('autoSaveBtn').textContent = 'Enable Auto-Save';
-            }
-        }
-    }
-
-    function saveAllData() {
-        const data = {};
-        document.querySelectorAll('.grid-cell[id^="cell-"]').forEach(cell => {
-            data[cell.id] = cell.innerHTML;
-        });
-        localStorage.setItem('pidTrackerData', JSON.stringify(data));
-        writeToLocalFile();
-    }
-
-    function loadSavedData() {
-        const saved = localStorage.getItem('pidTrackerData');
-        if (!saved) return;
-        const data = JSON.parse(saved);
-        for (const [id, html] of Object.entries(data)) {
-            const cell = document.getElementById(id);
-            if (cell) {
-                cell.innerHTML = html;
-                if (html.includes('entry-container')) cell.classList.add('has-entries');
-            }
-        }
-    }
-
-    function clearAllData() {
-        if (confirm("Clear all reports?")) {
-            localStorage.removeItem('pidTrackerData');
-            location.reload();
-        }
     }
 
     function updateClockAndHighlight() {
         const now = new Date();
         document.getElementById('utcClock').textContent = `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`;
-        const localHour = now.getHours();
-        document.querySelectorAll('.current-hour-row').forEach(el => el.classList.remove('current-hour-row'));
-        if (localHour >= 6 && localHour <= 23) {
-            document.querySelectorAll(`[id$="-${String(localHour).padStart(2, '0')}00"], #row-time-${localHour}`).forEach(el => el.classList.add('current-hour-row'));
+        const currentHour = now.getHours();
+        document.querySelectorAll('.grid-cell').forEach(cell => {
+            cell.classList.remove('current-hour-active', 'current-hour-complete', 'past-complete', 'past-incomplete');
+            const cellHourStr = cell.dataset.hour;
+            if (!cellHourStr) return; 
+            const cellHourInt = parseInt(cellHourStr) / 100;
+            const hasData = cell.classList.contains('has-entries');
+            if (cellHourInt === currentHour) {
+                if (hasData) cell.classList.add('current-hour-complete');
+                else cell.classList.add('current-hour-active');
+                document.getElementById(`row-time-${currentHour}`)?.classList.add('current-hour-active');
+            } else if (cellHourInt < currentHour) {
+                if (hasData) cell.classList.add('past-complete');
+                else cell.classList.add('past-incomplete');
+            }
+        });
+    }
+
+    async function toggleAutoSave() {
+        if (fileHandle) { fileHandle = null; updateAutoSaveBtn(false); return; }
+        try {
+            fileHandle = await window.showSaveFilePicker({
+                suggestedName: "pid_tracker_area8.json",
+                types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+            });
+            updateAutoSaveBtn(true);
+            triggerFileWrite();
+        } catch (err) {}
+    }
+
+    function updateAutoSaveBtn(active) { const b = document.getElementById('autoSaveBtn'); b.className = active ? 'btn-green' : 'btn-gray'; b.textContent = active ? 'Auto-Save: On' : 'Auto-Save: Off'; }
+
+    async function triggerFileWrite() {
+        if (!fileHandle) return;
+        const d = {};
+        document.querySelectorAll('.grid-cell[id^="cell-"]').forEach(c => {
+            const e = Array.from(c.querySelectorAll('.cell-text')).map(s => s.innerText);
+            if (e.length > 0) d[c.id] = e;
+        });
+        try {
+            const w = await fileHandle.createWritable();
+            await w.write(JSON.stringify(d, null, 2));
+            await w.close();
+        } catch (err) { fileHandle = null; updateAutoSaveBtn(false); }
+    }
+
+    function saveAllData() { const d = {}; document.querySelectorAll('.grid-cell[id^="cell-"]').forEach(c => d[c.id] = c.innerHTML); localStorage.setItem('pidTrackerData', JSON.stringify(d)); triggerFileWrite(); }
+
+    function loadSavedData() {
+        const saved = localStorage.getItem('pidTrackerData');
+        if (!saved) return;
+        const d = JSON.parse(saved);
+        for (const [id, h] of Object.entries(d)) {
+            const c = document.getElementById(id);
+            if (c) {
+                c.innerHTML = h;
+                if (h.includes('entry-container')) c.classList.add('has-entries');
+            }
         }
     }
 
     function renderButtons(container, cellId) {
         container.classList.remove('has-entries');
-        container.innerHTML = `<button class="btn-gray" onclick="handleNotRequired('${cellId}')">Not Required</button>
-                               <button class="btn-gray" onclick="handleReport('${cellId}')">Report</button>`;
+        container.innerHTML = `<button class="clear-cell-btn" onclick="clearThisCell('${cellId}')">×</button><button class="btn-gray" onclick="handleNotRequired('${cellId}')">Not Req</button><button class="btn-gray" onclick="handleReport('${cellId}')">Report</button>`;
     }
 
-    function handleNotRequired(cellId) { appendEntry(cellId, "Not Required"); saveAllData(); }
+    function clearThisCell(cellId) { const cell = document.getElementById(cellId); renderButtons(cell, cellId); saveAllData(); }
 
-    function handleReport(cellId) {
+    function appendEntry(cellId, text) {
         const cell = document.getElementById(cellId);
-        const hourTag = cell.dataset.hour;
-        if (parseInt(hourTag)/100 !== new Date().getHours()) openManualModal(cellId, hourTag);
-        else openReportModal(cellId, hourTag);
+        if (cell.querySelector('.btn-gray')) { 
+            cell.innerHTML = '<button class="clear-cell-btn" onclick="clearThisCell(\'' + cellId + '\')">×</button>';
+            cell.classList.add('has-entries'); 
+        }
+        const div = document.createElement('div');
+        div.className = 'entry-container';
+        div.innerHTML = `<span class="cell-text">${text}</span><div class="action-group"><button class="icon-btn" onclick="editEntry(this)">✎</button><button class="icon-btn" onclick="removeThisEntry(this, '${cellId}')">&#8634;</button></div>`;
+        cell.appendChild(div);
+        updateClockAndHighlight();
+        saveAllData();
+    }
+
+    function handleNotRequired(cellId) { appendEntry(cellId, "Not Required"); }
+    function handleReport(cellId) { const cell = document.getElementById(cellId); const tag = cell.dataset.hour; if (parseInt(tag)/100 !== new Date().getHours()) openManualModal(cellId, tag); else openReportModal(cellId, tag); }
+
+    function toggleManualBtn(btn) { btn.classList.toggle('active'); }
+    function toggleReportBtn(btn, sectorName, type) {
+        const partnerId = type === 'neg' ? `r-reg-${sectorName}` : `r-neg-${sectorName}`;
+        const partnerBtn = document.getElementById(partnerId);
+        btn.classList.toggle('active');
+        if (btn.classList.contains('active') && partnerBtn) partnerBtn.classList.remove('active');
     }
 
     function openManualModal(cellId, hour) {
         activeCellId = cellId;
-        document.getElementById('manualHourLabel').textContent = `Slot: ${hour}`;
+        document.getElementById('manualHourLabel').textContent = hour;
         const list = document.getElementById('manualSectorList');
-        list.innerHTML = '';
-        sectors.forEach(s => {
-            const row = document.createElement('div');
-            row.className = 'manual-row';
-            row.innerHTML = `<div style="font-weight:bold;">${s}</div>
-                <label style="font-size:0.8rem; cursor:pointer;"><input type="checkbox" id="m-neg-${s}"> Neg</label>
-                <input type="text" id="m-time-${s}" placeholder="Zulu">
-                <button class="btn-blue" onclick="submitManual('${s}', this)">Submit</button>`;
-            list.appendChild(row);
-        });
+        list.innerHTML = currentSectors.map((fullSector, idx) => {
+            const subs = fullSector.split('/');
+            return `<div class="manual-row" id="m-row-${idx}">
+                    <div class="manual-sector-label">${fullSector}</div>
+                    <input type="text" placeholder="Zulu">
+                    ${subs.map(s => `<button class="btn-gray toggle-btn" onclick="toggleManualBtn(this)" data-val="${s}">${s}</button>`).join('')}
+                    <button class="btn-gray toggle-btn" onclick="toggleManualBtn(this)" data-val="${fullSector}">${fullSector}</button>
+                    <button class="btn-gray toggle-btn m-neg-btn" onclick="toggleManualBtn(this)">Neg</button>
+                </div>`;
+        }).join('');
         toggleModal('manualModal', true);
     }
 
-    function submitManual(sectorName, btn) {
-        const timeVal = document.getElementById(`m-time-${sectorName}`).value;
-        const isNeg = document.getElementById(`m-neg-${sectorName}`).checked;
-        if (!timeVal) return alert("Enter Zulu time");
-        appendEntry(activeCellId, `${sectorName} ${timeVal}Z${isNeg ? ' Neg' : ''}`);
-        btn.className = 'btn-green'; btn.textContent = 'Done';
-        saveAllData();
+    function submitAllManual() {
+        const rows = document.querySelectorAll('.manual-row');
+        let created = false;
+        rows.forEach((row, idx) => {
+            const t = row.querySelector('input').value;
+            const isNeg = row.querySelector('.m-neg-btn').classList.contains('active');
+            const activeSecs = Array.from(row.querySelectorAll('.toggle-btn.active:not(.m-neg-btn)')).map(b => b.getAttribute('data-val'));
+            const orig = currentSectors[idx];
+            if (t && activeSecs.length > 0) {
+                let sectorStr = activeSecs.includes(orig) ? orig : activeSecs.sort().join('/');
+                appendEntry(activeCellId, `${sectorStr} ${t.padStart(4, '0')}Z${isNeg ? ' Negative' : ''}`);
+                created = true;
+            }
+        });
+        if (created) toggleModal('manualModal', false);
+        else alert("Need Time and Sector.");
     }
 
     function openReportModal(cellId, hour) {
         activeCellId = cellId;
-        document.getElementById('reportHourLabel').textContent = `Slot: ${hour}`;
+        document.getElementById('reportHourLabel').textContent = hour;
         const list = document.getElementById('reportSectorList');
-        list.innerHTML = '';
-        sectors.forEach(s => {
-            const row = document.createElement('div');
-            row.className = 'report-row';
-            row.style.display = 'flex'; row.style.gap = '5px'; row.style.marginBottom = '4px';
-            row.innerHTML = `<button class="btn-blue" style="flex:1;" onclick="submitQuick('${s}', false, this)">${s}</button>
-                             <button class="btn-gray" style="flex:2;" onclick="submitQuick('${s}', true, this)">${s} Neg Rpt</button>`;
-            list.appendChild(row);
-        });
+        list.innerHTML = currentSectors.map((full) => {
+            const subs = full.split('/');
+            return `<div class="report-group-box">
+                <div class="report-sector-text">${full}</div>
+                <div class="report-btn-list">
+                    ${subs.map(s => `<div class="report-btn-pair">
+                        <button id="r-reg-${s}" class="btn-blue-toggle toggle-btn" onclick="toggleReportBtn(this, '${s}', 'reg')" data-val="${s}">${s}</button>
+                        <button id="r-neg-${s}" class="btn-gray toggle-btn" onclick="toggleReportBtn(this, '${s}', 'neg')" data-val="${s}">${s} Neg</button>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }).join('');
         toggleModal('reportModal', true);
     }
 
-    function submitQuick(sectorName, isNeg, btn) {
+    function submitAllQuick() {
         const now = new Date();
-        const t = String(now.getUTCHours()).padStart(2, '0') + String(now.getUTCMinutes()).padStart(2, '0');
-        appendEntry(activeCellId, `${sectorName} ${t}Z${isNeg ? ' Neg' : ''}`);
-        btn.className = 'btn-green';
-        saveAllData();
+        const tStr = String(now.getUTCHours()).padStart(2, '0') + String(now.getUTCMinutes()).padStart(2, '0');
+        const active = document.querySelectorAll('#reportSectorList .toggle-btn.active');
+        if (active.length === 0) { toggleModal('reportModal', false); return; }
+        active.forEach(btn => {
+            const isNeg = btn.id.startsWith('r-neg-');
+            const sName = btn.getAttribute('data-val');
+            appendEntry(activeCellId, `${sName} ${tStr}Z${isNeg ? ' Negative' : ''}`);
+        });
+        toggleModal('reportModal', false);
     }
 
-    function appendEntry(cellId, text) {
-        const cell = document.getElementById(cellId);
-        if (cell.querySelector('.btn-gray')) { cell.innerHTML = ''; cell.classList.add('has-entries'); }
-        const div = document.createElement('div');
-        div.className = 'entry-container';
-        div.innerHTML = `<span class="cell-text">${text}</span><div class="action-group">
-            <button class="icon-btn" onclick="editEntry(this)">✎</button>
-            <button class="icon-btn" onclick="removeThisEntry(this, '${cellId}')">&#8634;</button>
-        </div>`;
-        cell.appendChild(div);
-    }
-
-    function editEntry(btn) {
-        const container = btn.closest('.entry-container');
-        const span = container.querySelector('.cell-text');
-        const input = document.createElement('input');
-        input.style.width = '130px'; input.value = span.innerText;
-        container.replaceChild(input, span);
-        input.focus(); input.select();
-        input.onblur = () => { 
-            const s = document.createElement('span'); s.className = 'cell-text'; s.innerText = input.value || "Empty"; 
-            container.replaceChild(s, input);
-            saveAllData();
-        };
-        input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
-    }
-
-    function removeThisEntry(btn, cellId) { 
-        btn.closest('.entry-container').remove(); 
-        if (!document.getElementById(cellId).children.length) renderButtons(document.getElementById(cellId), cellId); 
-        saveAllData();
-    }
-    
     function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
-
+    function editEntry(btn) { const c = btn.closest('.entry-container'); const s = c.querySelector('.cell-text'); const i = document.createElement('input'); i.style.width = '130px'; i.value = s.innerText; c.replaceChild(i, s); i.focus(); i.select(); i.onblur = () => { const sp = document.createElement('span'); sp.className = 'cell-text'; sp.innerText = i.value || "Empty"; c.replaceChild(sp, i); saveAllData(); }; i.onkeydown = (e) => { if (e.key === 'Enter') i.blur(); }; }
+    function removeThisEntry(btn, cellId) { const container = btn.closest('.entry-container'); const cell = document.getElementById(cellId); container.remove(); if (cell.querySelectorAll('.entry-container').length === 0) renderButtons(cell, cellId); saveAllData(); }
+    function clearAllData() { if (confirm("Clear all?")) { localStorage.removeItem('pidTrackerData'); location.reload(); } }
+    function updateSectorChecklist() { const c = document.getElementById('sectorChecklist'); c.innerHTML = currentSectors.map(s => `<label style="display:block; padding: 6px; border-bottom: 1px solid #edf2f7; cursor:pointer;"><input type="checkbox" value="${s}"> ${s}</label>`).join(''); }
+    function combineSelected() { const checked = Array.from(document.querySelectorAll('#sectorChecklist input:checked')).map(i => i.value); if (checked.length < 2) return alert("Select 2+."); const combined = checked.sort().join('/'); currentSectors = currentSectors.filter(s => !checked.includes(s)); currentSectors.push(combined); currentSectors.sort(); localStorage.setItem('pidSectors', JSON.stringify(currentSectors)); updateSectorChecklist(); saveAllData(); }
+    function decombineSelected() { const checked = Array.from(document.querySelectorAll('#sectorChecklist input:checked')).map(i => i.value); if (checked.length === 0) return alert("Select combined."); let newSec = [...currentSectors]; checked.forEach(val => { if (val.includes('/')) { const parts = val.split('/'); newSec = newSec.filter(s => s !== val); parts.forEach(p => { if(!newSec.includes(p)) newSec.push(p); }); } }); currentSectors = newSec.sort(); localStorage.setItem('pidSectors', JSON.stringify(currentSectors)); updateSectorChecklist(); saveAllData(); }
+    function resetSectors() { if (confirm("Reset?")) { currentSectors = [...DEFAULT_SECTORS]; localStorage.setItem('pidSectors', JSON.stringify(currentSectors)); updateSectorChecklist(); saveAllData(); } }
+    function importFromJson() { const i = document.createElement('input'); i.type = 'file'; i.accept = '.json'; i.onchange = e => { const f = e.target.files[0]; const r = new FileReader(); r.onload = ev => { try { const d = JSON.parse(ev.target.result); document.querySelectorAll('.grid-cell[id^="cell-"]').forEach(c => renderButtons(c, c.id)); for (const [cid, ent] of Object.entries(d)) { if (Array.isArray(ent)) ent.forEach(t => appendEntry(cid, t)); } saveAllData(); } catch (err) { alert("Error."); } }; r.readAsText(f); }; i.click(); }
     window.onload = init;
 </script>
 </body>
