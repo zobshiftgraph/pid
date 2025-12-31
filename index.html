@@ -6,37 +6,26 @@
     <title>PID Report Tracker</title>
     <style>
         body { font-family: -apple-system, sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        
-        /* Container and Header Setup */
         .container { background-color: white; padding: 2rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); width: 100%; max-width: 950px; position: relative; }
         
-        /* STICKY HEADER AREA */
-        .sticky-header {
-            position: sticky;
-            top: -20px; /* Aligns with the body padding */
-            background-color: white;
-            z-index: 100;
-            padding-top: 10px;
+        .sticky-header { 
+            position: sticky; 
+            top: -20px; 
+            background-color: white; 
+            z-index: 110; 
+            padding-top: 10px; 
+            padding-bottom: 5px;
             margin-bottom: 0;
         }
 
-        h1 { text-align: center; color: #1a202c; margin: 0 0 1rem 0; text-transform: uppercase; border-bottom: 2px solid #2d3748; padding-bottom: 10px; }
+        h1 { text-align: center; color: #1a202c; margin: 0; text-transform: uppercase; border-bottom: 2px solid #2d3748; padding-bottom: 10px; }
         
-        .controls { display: flex; justify-content: center; margin-bottom: 25px; align-items: center; width: 100%; }
-        .utc-clock { 
-            font-family: 'Courier New', Courier, monospace; 
-            font-weight: bold; 
-            color: #e53e3e; 
-            background: #fff5f5; 
-            padding: 10px 30px; 
-            border-radius: 8px; 
-            border: 2px solid #feb2b2; 
-            font-size: 2rem; 
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
-        }
+        .header-controls { display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px 0; background: white;}
+        .action-buttons { display: flex; gap: 8px; }
         
-        /* STICKY TABLE HEADERS */
-        .grid-container { display: grid; grid-template-columns: 100px 1fr 1fr; border: 2px solid #2d3748; border-radius: 6px; }
+        .utc-clock { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #e53e3e; background: #fff5f5; padding: 8px 25px; border-radius: 8px; border: 2px solid #feb2b2; font-size: 1.8rem; }
+        
+        .grid-container { display: grid; grid-template-columns: 100px 1fr 1fr; border: 2px solid #2d3748; border-radius: 6px; background-color: white; }
         
         .grid-header { 
             background-color: #2d3748; 
@@ -44,71 +33,36 @@
             padding: 15px; 
             text-align: center; 
             font-weight: bold; 
-            position: sticky;
-            top: 135px; /* Offset to sit below the sticky clock/title */
-            z-index: 101;
+            position: sticky; 
+            top: 114px; /* Flushed to clock area */
+            z-index: 105; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
         }
-        
+
         .divider-col { border-right: 4px solid #2d3748 !important; }
 
-        .grid-cell { 
-            padding: 10px; 
-            border-bottom: 1px solid #e2e8f0; 
-            border-right: 1px solid #e2e8f0; 
-            display: flex; 
-            flex-direction: row; 
-            gap: 6px; 
-            align-items: center; 
-            justify-content: center; 
-            min-height: 80px; 
-            position: relative; 
-            transition: background-color 0.3s;
-        }
-
-        .current-hour-row {
-            background-color: #ebf8ff !important; 
-            border-top: 2px solid #3182ce;
-            border-bottom: 2px solid #3182ce;
-        }
-        .time-cell.current-hour-row {
-            border-left: 6px solid #3182ce;
-            color: #2c5282;
-        }
-
+        .grid-cell { padding: 10px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; display: flex; flex-direction: row; gap: 6px; align-items: center; justify-content: center; min-height: 80px; position: relative; transition: background-color 0.3s; background-color: white; }
+        
+        .current-hour-row { background-color: #ebf8ff !important; border-top: 2px solid #3182ce; border-bottom: 2px solid #3182ce; }
         .grid-cell.has-entries { flex-direction: column; align-items: center; }
         .time-cell { background-color: #edf2f7; font-weight: bold; border-right: 2px solid #2d3748; font-size: 1.1rem; }
         
-        .entry-container { 
-            display: flex; 
-            align-items: center; 
-            justify-content: flex-start; 
-            width: fit-content; 
-            min-width: 175px; 
-            position: relative;
-            padding-right: 55px; 
-            margin-bottom: 4px;
-        }
+        .entry-container { display: flex; align-items: center; justify-content: flex-start; width: fit-content; min-width: 175px; position: relative; padding-right: 55px; margin-bottom: 4px; }
+        .cell-text { font-weight: bold; color: #2d3748; font-size: 0.95rem; white-space: nowrap; }
         
-        .cell-text { font-weight: bold; color: #2d3748; font-size: 0.95rem; white-space: nowrap; text-align: left; }
-        .edit-input { font-weight: bold; font-family: inherit; font-size: 0.95rem; border: 1px solid #3182ce; padding: 2px; width: 130px; outline: none; background: white; }
-
         .action-group { position: absolute; right: 0; display: flex; gap: 4px; }
-        .icon-btn { background: none; border: none; color: #a0aec0; cursor: pointer; font-size: 1.15rem; padding: 2px; transition: color 0.2s; }
-        .edit-btn:hover { color: #3182ce; }
-        .undo-btn:hover { color: #e53e3e; }
+        .icon-btn { background: none; border: none; color: #a0aec0; cursor: pointer; font-size: 1.15rem; padding: 2px; }
 
-        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-blue { background-color: #3182ce; color: white; }
         .btn-green { background-color: #38a169 !important; color: white !important; }
         .btn-red { background-color: #e53e3e; color: white; }
-        .btn-gray { background-color: #edf2f7; color: #2d3748; border: 1px solid #cbd5e0; font-size: 0.75rem; flex: 1; white-space: nowrap; }
+        .btn-gray { background-color: #edf2f7; color: #2d3748; border: 1px solid #cbd5e0; font-size: 0.75rem; flex: 1; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 15px; border-radius: 10px; width: 350px; }
-        .report-row { display: flex; align-items: center; justify-content: center; gap: 8px; background: #f9fafb; padding: 5px; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 4px; }
-        .btn-report-main { background-color: #3182ce; color: white; flex: 1; padding: 6px; font-size: 0.9rem; }
-        .btn-report-neg { background-color: #718096; color: white; flex: 2; padding: 6px; font-size: 0.85rem; }
-        .modal-footer-btn { width: 100%; margin-top: 8px; padding: 10px; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 550px; }
+        .manual-row { display: grid; grid-template-columns: 60px 80px 100px 1fr; align-items: center; gap: 15px; background: #f9fafb; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 6px; }
+        .manual-row input[type="text"] { width: 60px; padding: 4px; border: 1px solid #cbd5e0; border-radius: 4px; text-align: center; }
     </style>
 </head>
 <body>
@@ -116,8 +70,15 @@
 <div class="container">
     <div class="sticky-header">
         <h1>PID Report Tracker</h1>
-        <div class="controls">
+        <div class="header-controls">
+            <div class="action-buttons">
+                <button id="autoSaveBtn" class="btn-blue" onclick="toggleAutoSave()">Enable Auto-Save</button>
+                <button class="btn-gray" onclick="importFromJson()">Load JSON</button>
+            </div>
             <div class="utc-clock" id="utcClock">--:--</div>
+            <div class="action-buttons">
+                <button class="btn-red" onclick="clearAllData()">Clear Page</button>
+            </div>
         </div>
     </div>
 
@@ -128,145 +89,235 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="reportModal">
-    <div class="modal-content">
-        <h3 style="margin-top:0; text-align:center;">Submit Reports</h3>
-        <div id="reportSectorList"></div>
-        <button class="btn-blue modal-footer-btn" onclick="toggleModal('reportModal', false)">Done</button>
-    </div>
-</div>
+<div id="manualModal" class="modal-overlay"><div class="modal-content"><h3 style="text-align:center;">Manual Entry</h3><div id="manualHourLabel" style="text-align:center; color:#3182ce; font-weight:bold; margin-bottom:10px;"></div><div id="manualSectorList"></div><button class="btn-blue" style="width: 100%; margin-top: 15px;" onclick="toggleModal('manualModal', false)">Done</button></div></div>
+<div id="reportModal" class="modal-overlay"><div class="modal-content" style="width: 350px;"><h3 style="text-align:center;">Submit Reports</h3><div id="reportHourLabel" style="text-align:center; color:#3182ce; font-weight:bold; margin-bottom:10px;"></div><div id="reportSectorList"></div><button class="btn-blue" style="width:100%; margin-top: 10px;" onclick="toggleModal('reportModal', false)">Done</button></div></div>
 
 <script>
     let activeCellId = null;
+    let fileHandle = null;
     const sectors = ["02", "03", "04", "06", "07", "08"];
+    const DEFAULT_FILENAME = "pid_tracker_area8.json";
 
     function init() {
         const grid = document.getElementById('trackerGrid');
         for (let i = 6; i <= 23; i++) {
-            const time = i.toString().padStart(2, '0') + "00";
-            
-            const timeDiv = document.createElement('div');
-            timeDiv.className = 'grid-cell time-cell';
-            timeDiv.id = `row-time-${i}`;
-            timeDiv.textContent = time;
-            grid.appendChild(timeDiv);
-            
-            const turbId = `cell-turb-${time}`;
-            const turbDiv = document.createElement('div');
-            turbDiv.className = 'grid-cell divider-col';
-            turbDiv.id = turbId;
-            renderButtons(turbDiv, turbId);
-            grid.appendChild(turbDiv);
-
-            const icingId = `cell-icing-${time}`;
-            const icingDiv = document.createElement('div');
-            icingDiv.className = 'grid-cell';
-            icingDiv.id = icingId;
-            renderButtons(icingDiv, icingId);
-            grid.appendChild(icingDiv);
+            const timeStr = i.toString().padStart(2, '0') + "00";
+            grid.innerHTML += `<div class="grid-cell time-cell" id="row-time-${i}">${timeStr}</div>`;
+            ['turb', 'icing'].forEach(type => {
+                const cellId = `cell-${type}-${timeStr}`;
+                const div = document.createElement('div');
+                div.className = `grid-cell ${type === 'turb' ? 'divider-col' : ''}`;
+                div.id = cellId;
+                div.dataset.hour = timeStr;
+                renderButtons(div, cellId);
+                grid.appendChild(div);
+            });
         }
+        loadSavedData();
         setInterval(updateClockAndHighlight, 1000);
         updateClockAndHighlight();
     }
 
+    function importFromJson() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = e => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = event => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    document.querySelectorAll('.grid-cell[id^="cell-"]').forEach(cell => renderButtons(cell, cell.id));
+                    for (const [cellId, entries] of Object.entries(data)) {
+                        if (Array.isArray(entries)) entries.forEach(entryText => appendEntry(cellId, entryText));
+                    }
+                    saveAllData();
+                    alert("Data loaded successfully.");
+                } catch (err) { alert("Error parsing JSON file."); }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    async function toggleAutoSave() {
+        if (fileHandle) {
+            fileHandle = null;
+            document.getElementById('autoSaveBtn').className = 'btn-blue';
+            document.getElementById('autoSaveBtn').textContent = 'Enable Auto-Save';
+            return;
+        }
+        try {
+            fileHandle = await window.showSaveFilePicker({
+                suggestedName: DEFAULT_FILENAME,
+                types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
+            });
+            document.getElementById('autoSaveBtn').className = 'btn-green';
+            document.getElementById('autoSaveBtn').textContent = 'Auto-Save Active';
+            writeToLocalFile();
+        } catch (err) { console.error(err); }
+    }
+
+    async function writeToLocalFile() {
+        const data = {};
+        document.querySelectorAll('.grid-cell[id^="cell-"]').forEach(cell => {
+            const entries = [];
+            cell.querySelectorAll('.cell-text').forEach(span => entries.push(span.innerText));
+            if (entries.length > 0) data[cell.id] = entries;
+        });
+
+        if (fileHandle) {
+            try {
+                const writable = await fileHandle.createWritable();
+                await writable.write(JSON.stringify(data, null, 2));
+                await writable.close();
+            } catch (err) { 
+                fileHandle = null;
+                document.getElementById('autoSaveBtn').className = 'btn-blue';
+                document.getElementById('autoSaveBtn').textContent = 'Enable Auto-Save';
+            }
+        }
+    }
+
+    function saveAllData() {
+        const data = {};
+        document.querySelectorAll('.grid-cell[id^="cell-"]').forEach(cell => {
+            data[cell.id] = cell.innerHTML;
+        });
+        localStorage.setItem('pidTrackerData', JSON.stringify(data));
+        writeToLocalFile();
+    }
+
+    function loadSavedData() {
+        const saved = localStorage.getItem('pidTrackerData');
+        if (!saved) return;
+        const data = JSON.parse(saved);
+        for (const [id, html] of Object.entries(data)) {
+            const cell = document.getElementById(id);
+            if (cell) {
+                cell.innerHTML = html;
+                if (html.includes('entry-container')) cell.classList.add('has-entries');
+            }
+        }
+    }
+
+    function clearAllData() {
+        if (confirm("Clear all reports?")) {
+            localStorage.removeItem('pidTrackerData');
+            location.reload();
+        }
+    }
+
     function updateClockAndHighlight() {
         const now = new Date();
-        const utc_h = String(now.getUTCHours()).padStart(2, '0');
-        const utc_m = String(now.getUTCMinutes()).padStart(2, '0');
-        document.getElementById('utcClock').textContent = `${utc_h}:${utc_m}`;
-
+        document.getElementById('utcClock').textContent = `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`;
         const localHour = now.getHours();
         document.querySelectorAll('.current-hour-row').forEach(el => el.classList.remove('current-hour-row'));
-
         if (localHour >= 6 && localHour <= 23) {
-            const timeCell = document.getElementById(`row-time-${localHour}`);
-            const turbCell = document.getElementById(`cell-turb-${String(localHour).padStart(2, '0')}00`);
-            const icingCell = document.getElementById(`cell-icing-${String(localHour).padStart(2, '0')}00`);
-            if (timeCell) timeCell.classList.add('current-hour-row');
-            if (turbCell) turbCell.classList.add('current-hour-row');
-            if (icingCell) icingCell.classList.add('current-hour-row');
+            document.querySelectorAll(`[id$="-${String(localHour).padStart(2, '0')}00"], #row-time-${localHour}`).forEach(el => el.classList.add('current-hour-row'));
         }
     }
 
     function renderButtons(container, cellId) {
         container.classList.remove('has-entries');
-        container.innerHTML = `
-            <button class="btn-gray" onclick="setNotRequired('${cellId}')">Not Required</button>
-            <button class="btn-gray" onclick="openReportModal('${cellId}')">Report</button>
-        `;
+        container.innerHTML = `<button class="btn-gray" onclick="handleNotRequired('${cellId}')">Not Required</button>
+                               <button class="btn-gray" onclick="handleReport('${cellId}')">Report</button>`;
     }
 
-    function setNotRequired(cellId) { appendEntry(cellId, "Not Required"); }
+    function handleNotRequired(cellId) { appendEntry(cellId, "Not Required"); saveAllData(); }
 
-    function appendEntry(cellId, text) {
+    function handleReport(cellId) {
         const cell = document.getElementById(cellId);
-        if (cell.querySelector('.btn-gray')) {
-            cell.innerHTML = '';
-            cell.classList.add('has-entries');
-        }
-        const entryDiv = document.createElement('div');
-        entryDiv.className = 'entry-container';
-        entryDiv.innerHTML = `
-            <span class="cell-text">${text}</span>
-            <div class="action-group">
-                <button class="icon-btn edit-btn" onclick="editEntry(this)" title="Edit">✎</button>
-                <button class="icon-btn undo-btn" onclick="removeThisEntry(this, '${cellId}')" title="Remove">&#8634;</button>
-            </div>
-        `;
-        cell.appendChild(entryDiv);
+        const hourTag = cell.dataset.hour;
+        if (parseInt(hourTag)/100 !== new Date().getHours()) openManualModal(cellId, hourTag);
+        else openReportModal(cellId, hourTag);
     }
 
-    function editEntry(btn) {
-        const container = btn.closest('.entry-container');
-        const textSpan = container.querySelector('.cell-text');
-        const input = document.createElement('input');
-        input.className = 'edit-input';
-        input.value = textSpan.innerText;
-        container.replaceChild(input, textSpan);
-        input.focus();
-        input.select();
-        const save = () => {
-            const span = document.createElement('span');
-            span.className = 'cell-text';
-            span.innerText = input.value || "Empty";
-            container.replaceChild(span, input);
-        };
-        input.onblur = save;
-        input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
-    }
-
-    function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
-
-    function openReportModal(cellId) {
+    function openManualModal(cellId, hour) {
         activeCellId = cellId;
+        document.getElementById('manualHourLabel').textContent = `Slot: ${hour}`;
+        const list = document.getElementById('manualSectorList');
+        list.innerHTML = '';
+        sectors.forEach(s => {
+            const row = document.createElement('div');
+            row.className = 'manual-row';
+            row.innerHTML = `<div style="font-weight:bold;">${s}</div>
+                <label style="font-size:0.8rem; cursor:pointer;"><input type="checkbox" id="m-neg-${s}"> Neg</label>
+                <input type="text" id="m-time-${s}" placeholder="Zulu">
+                <button class="btn-blue" onclick="submitManual('${s}', this)">Submit</button>`;
+            list.appendChild(row);
+        });
+        toggleModal('manualModal', true);
+    }
+
+    function submitManual(sectorName, btn) {
+        const timeVal = document.getElementById(`m-time-${sectorName}`).value;
+        const isNeg = document.getElementById(`m-neg-${sectorName}`).checked;
+        if (!timeVal) return alert("Enter Zulu time");
+        appendEntry(activeCellId, `${sectorName} ${timeVal}Z${isNeg ? ' Neg' : ''}`);
+        btn.className = 'btn-green'; btn.textContent = 'Done';
+        saveAllData();
+    }
+
+    function openReportModal(cellId, hour) {
+        activeCellId = cellId;
+        document.getElementById('reportHourLabel').textContent = `Slot: ${hour}`;
         const list = document.getElementById('reportSectorList');
         list.innerHTML = '';
         sectors.forEach(s => {
             const row = document.createElement('div');
             row.className = 'report-row';
-            row.innerHTML = `
-                <button class="btn-report-main" onclick="submitReport('${s}', false, this)">${s}</button>
-                <button class="btn-report-neg" onclick="submitReport('${s}', true, this)">${s} Neg Rpt</button>
-            `;
+            row.style.display = 'flex'; row.style.gap = '5px'; row.style.marginBottom = '4px';
+            row.innerHTML = `<button class="btn-blue" style="flex:1;" onclick="submitQuick('${s}', false, this)">${s}</button>
+                             <button class="btn-gray" style="flex:2;" onclick="submitQuick('${s}', true, this)">${s} Neg Rpt</button>`;
             list.appendChild(row);
         });
         toggleModal('reportModal', true);
     }
 
-    function submitReport(sectorName, isNeg, btnElement) {
+    function submitQuick(sectorName, isNeg, btn) {
         const now = new Date();
-        const h = String(now.getUTCHours()).padStart(2, '0');
-        const m = String(now.getUTCMinutes()).padStart(2, '0');
-        appendEntry(activeCellId, `${sectorName} ${h}${m}Z${isNeg ? ' Neg' : ''}`);
-        btnElement.classList.remove('btn-report-main', 'btn-report-neg');
-        btnElement.classList.add('btn-green');
+        const t = String(now.getUTCHours()).padStart(2, '0') + String(now.getUTCMinutes()).padStart(2, '0');
+        appendEntry(activeCellId, `${sectorName} ${t}Z${isNeg ? ' Neg' : ''}`);
+        btn.className = 'btn-green';
+        saveAllData();
     }
 
-    function removeThisEntry(btn, cellId) {
+    function appendEntry(cellId, text) {
         const cell = document.getElementById(cellId);
-        btn.closest('.entry-container').remove();
-        if (cell.children.length === 0) renderButtons(cell, cellId);
+        if (cell.querySelector('.btn-gray')) { cell.innerHTML = ''; cell.classList.add('has-entries'); }
+        const div = document.createElement('div');
+        div.className = 'entry-container';
+        div.innerHTML = `<span class="cell-text">${text}</span><div class="action-group">
+            <button class="icon-btn" onclick="editEntry(this)">✎</button>
+            <button class="icon-btn" onclick="removeThisEntry(this, '${cellId}')">&#8634;</button>
+        </div>`;
+        cell.appendChild(div);
     }
+
+    function editEntry(btn) {
+        const container = btn.closest('.entry-container');
+        const span = container.querySelector('.cell-text');
+        const input = document.createElement('input');
+        input.style.width = '130px'; input.value = span.innerText;
+        container.replaceChild(input, span);
+        input.focus(); input.select();
+        input.onblur = () => { 
+            const s = document.createElement('span'); s.className = 'cell-text'; s.innerText = input.value || "Empty"; 
+            container.replaceChild(s, input);
+            saveAllData();
+        };
+        input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
+    }
+
+    function removeThisEntry(btn, cellId) { 
+        btn.closest('.entry-container').remove(); 
+        if (!document.getElementById(cellId).children.length) renderButtons(document.getElementById(cellId), cellId); 
+        saveAllData();
+    }
+    
+    function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
 
     window.onload = init;
 </script>
